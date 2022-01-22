@@ -6,16 +6,7 @@ import os
 from pygame.color import THECOLORS
 import math
 
-path = os.path.abspath(os.getcwd())
 
-pygame.init()
-
-screen = pygame.display.set_mode((1200, 800))
-
-tanks_group = pygame.sprite.Group()
-textures_group = pygame.sprite.Group()
-missles_group = pygame.sprite.Group()
-all_sprites = pygame.sprite.Group()
 
 class Texture(pygame.sprite.Sprite):
     def __init__(self, path, x, y, ispassable, iskillable):
@@ -51,6 +42,7 @@ class Tank(pygame.sprite.Sprite):
         self.add(tanks_group, all_sprites)
     
     def move(self, x, y, image):
+        self.direction = list(Missle.sprites.keys())[image]
         self.image = pygame.image.load(self.path + self.images[image])
         if check_borders(self.x+x, self.y+y):
             self.x += x
@@ -61,31 +53,39 @@ class Tank(pygame.sprite.Sprite):
 
 class Missle(pygame.sprite.Sprite):
 
-    sprites = {"up": "missle_up.png", "down": "missle_down.png", "right": "missle_right.png", "left": "missle_left.png"}
+    sprites = {"up": "missle_up.png", "down": "missle_down.png", "right": "missle_right.png", "left": "missle_left.png", "blaze": "blaze.png"}
 
-    def __init__(self, path, x, y, ttl, type):
+    def __init__(self, path, x, y, ttl, type, speed):
         super().__init__(missles_group, all_sprites)
         self.image = Missle.sprites.get(type)
-        self.x = x
-        self.y = y
+        self.path = path
+        self.x = x+0.4
+        self.y = y+0.4
         self.ttl = ttl
         self.image = pygame.image.load(path + Missle.sprites.get(type))
         self.rect = self.image.get_rect().move(16*y, 16*x)
 
         self.add(missles_group, all_sprites)
 
-        self.type = [1/4, 0]
+        if type == "up":
+            self.type = [-speed, 0]
+        elif type == "down":
+            self.type = [speed, 0]
+        elif type == "right":
+            self.type = [0, speed]
+        elif type == "left":
+            self.type = [0, -speed]
     
     def move(self):
         if check_borders(self.x + self.type[0], self.y + self.type[1]) and self.ttl > 0:
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
             self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
-            self.remove(tanks_group, all_sprites)
-            self.add(tanks_group, all_sprites)
+            self.remove(missles_group, all_sprites)
+            self.add(missles_group, all_sprites)
         
         else:
-            self.remove(tanks_group, all_sprites)
+            self.remove(missles_group, all_sprites)
 
         self.ttl -= 1
 
@@ -94,12 +94,12 @@ def check_borders(x, y):
 
     width, height = screen.get_size()
 
-    for texture in textures_group:
+    for texture in textures_group:  #check texture's collisions
         if (texture.x == math.ceil(x) and texture.y == math.ceil(y) or texture.x == math.floor(x) and texture.y == math.floor(y) or \
             texture.x == math.ceil(x) and texture.y == math.floor(y) or texture.x == math.floor(x) and texture.y == math.ceil(y)) and texture.ispassable == False:
             return False
 
-    if y*16+10 > width or x < 0 or x*16+10 > height or y < 0:
+    if y*16+5 > width or x < 0 or x*16+5 > height or y < 0:   #check window borders
         return False
     return True
 
@@ -122,32 +122,53 @@ def draw_level():   #level's size is 75x50 textures
                 Tank(path=(path + "/sprites/"), x=i, y=j, type="red")
             elif level[i][j] == 'D':
                 Tank(path=(path + "/sprites/"), x=i, y=j, type="green")
-tank = 0
-draw_level()
-Missle(path=(path + "/sprites/"), x=30, y=45, ttl=5, type="up")
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+def main():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    Missle(path=(path+"/sprites/"), x=tank.x, y=tank.y, ttl=240, type=tank.direction, speed=1/4)
 
-    keys = pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()
 
-    if keys[pygame.K_UP]:
-        tank.move(x=-1/4, y=0, image=0)
-    if keys[pygame.K_DOWN]:
-        tank.move(x=1/4, y=0, image=1)
-    if keys[pygame.K_LEFT]:
-        tank.move(x=0, y=-1/4, image=3)
-    if keys[pygame.K_RIGHT]:
-        tank.move(x=0, y=1/4, image=2)
-    
-    for missle in missles_group:
-        missle.move()
-    screen.fill(THECOLORS['black'])
-    tanks_group.draw(screen)
-    missles_group.draw(screen)
-    textures_group.draw(screen)
-    pygame.display.flip()
-    time.sleep(0.01)
+        if keys[pygame.K_UP]:
+            tank.move(x=-1/8, y=0, image=0)
+        if keys[pygame.K_DOWN]:
+            tank.move(x=1/8, y=0, image=1)
+        if keys[pygame.K_LEFT]:
+            tank.move(x=0, y=-1/8, image=3)
+        if keys[pygame.K_RIGHT]:
+            tank.move(x=0, y=1/8, image=2)
+        
+        for missle in missles_group:
+            missle.move()
+
+        screen.fill(THECOLORS['black'])
+        tanks_group.draw(screen)
+        missles_group.draw(screen)
+        textures_group.draw(screen)
+        pygame.display.flip()
+        time.sleep(0.01)
+
+if __name__ == "__main__":
+
+    path = os.path.abspath(os.getcwd())
+
+    pygame.init()
+
+    screen = pygame.display.set_mode((1200, 800))
+
+    tanks_group = pygame.sprite.Group()
+    textures_group = pygame.sprite.Group()
+    missles_group = pygame.sprite.Group()
+    all_sprites = pygame.sprite.Group()
+
+    tank = 0
+
+    draw_level()
+
+    main()
