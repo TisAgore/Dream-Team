@@ -30,11 +30,12 @@ class Tank(pygame.sprite.Sprite):
                 "green": ["green_tank_up.png", "green_tank_down.png", "green_tank_right.png", "green_tank_left.png"],
                 "grey": ["grey_tank_up.png", "grey_tank_down.png", "grey_tank_right.png", "grey_tank_left.png"]}
 
-    def __init__(self, path, x, y, type):
+    def __init__(self, path, x, y, type, hitpoints):
         super().__init__(tanks_group, all_sprites)
         self.images = Tank.sprites.get(type)
         self.x = x
         self.y = y
+        self.hitpoints = hitpoints
         self.path = path
         self.image = pygame.image.load(path + Tank.sprites.get(type)[0])
         self.rect = self.image.get_rect().move(16*y, 16*x)
@@ -47,6 +48,9 @@ class Tank(pygame.sprite.Sprite):
         if check_borders(self.x+x, self.y+y):
             self.x += x
             self.y += y
+        if self.hitpoints == 0:
+            print("Killed")
+            self.remove(tanks_group, all_sprites)
         self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
         self.remove(tanks_group, all_sprites)
         self.add(tanks_group, all_sprites)
@@ -55,18 +59,7 @@ class Missle(pygame.sprite.Sprite):
 
     sprites = {"up": "missle_up.png", "down": "missle_down.png", "right": "missle_right.png", "left": "missle_left.png", "blaze": "blaze.png"}
 
-    def __init__(self, path, x, y, ttl, type, speed):
-        super().__init__(missles_group, all_sprites)
-        self.image = Missle.sprites.get(type)
-        self.path = path
-        self.x = x+0.4
-        self.y = y+0.4
-        self.ttl = ttl
-        self.image = pygame.image.load(path + Missle.sprites.get(type))
-        self.rect = self.image.get_rect().move(16*y, 16*x)
-
-        self.add(missles_group, all_sprites)
-
+    def __init__(self, path, x, y, ttl, type, speed, owner):
         if type == "up":
             self.type = [-speed, 0]
         elif type == "down":
@@ -75,9 +68,30 @@ class Missle(pygame.sprite.Sprite):
             self.type = [0, speed]
         elif type == "left":
             self.type = [0, -speed]
+
+        super().__init__(missles_group, all_sprites)
+        self.image = Missle.sprites.get(type)
+        self.path = path
+        self.x = x + 0.4 + self.type[0]*5
+        self.y = y + 0.4 + self.type[1]*5
+        self.ttl = ttl
+        self.owner = owner
+        self.image = pygame.image.load(path + Missle.sprites.get(type))
+        self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
+
+        self.add(missles_group, all_sprites)
+
+        
     
     def move(self):
-        if check_borders(self.x + self.type[0], self.y + self.type[1]) and self.ttl > 0:
+        
+        texture_hits = pygame.sprite.spritecollide(self, textures_group, True)
+        tank_hits = pygame.sprite.spritecollide(self, tanks_group, True)
+
+        if len(tank_hits) > 1:
+            tank_hits[1].hitpoints -= 1
+            print(tank_hits[1].hitpoints)
+        if not(texture_hits) and self.ttl > 0:
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
             self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
@@ -99,8 +113,17 @@ def check_borders(x, y):
             texture.x == math.ceil(x) and texture.y == math.floor(y) or texture.x == math.floor(x) and texture.y == math.ceil(y)) and texture.ispassable == False:
             return False
 
-    if y*16+5 > width or x < 0 or x*16+5 > height or y < 0:   #check window borders
+    if y*16+16 > width or x < 0 or x*16+16 > height or y < 0:   #check window borders
         return False
+    return True
+
+def check_collisions (missle):
+    global tanks_group
+    for tank in tanks_group:
+        if tank.x == missle.x and tank.y == missle.y:
+            tank.hitpoints -= 1
+            print(tank.hitpoints)
+            return False
     return True
 
 def draw_level():   #level's size is 75x50 textures
@@ -115,13 +138,13 @@ def draw_level():   #level's size is 75x50 textures
             elif level[i][j] == '*':
                 Texture(path + "/sprites/bricks.png", i, j, ispassable=False, iskillable=True)
             elif level[i][j] == 'A':
-                tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold")
+                tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
             elif level[i][j] == 'B':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="grey")
+                Tank(path=(path + "/sprites/"), x=i, y=j, type="grey", hitpoints=3)
             elif level[i][j] == 'C':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="red")
+                Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
             elif level[i][j] == 'D':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="green")
+                Tank(path=(path + "/sprites/"), x=i, y=j, type="green", hitpoints=3)
 
 def main():
     while True:
@@ -131,7 +154,7 @@ def main():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    Missle(path=(path+"/sprites/"), x=tank.x, y=tank.y, ttl=240, type=tank.direction, speed=1/4)
+                    Missle(path=(path+"/sprites/"), x=tank.x, y=tank.y, ttl=240, type=tank.direction, speed=1/4, owner=tank)
 
         keys = pygame.key.get_pressed()
 
