@@ -7,16 +7,20 @@ from pygame.color import THECOLORS
 import math
 
 
-
 class Texture(pygame.sprite.Sprite):
-    def __init__(self, path, x, y, ispassable, iskillable):
+    def __init__(self, path, x, y, ispassable, isdestroyable):
         super().__init__(textures_group, all_sprites)
         self.x = x
         self.y = y
         self.ispassable = ispassable
-        self.iskillable = iskillable
+        self.isdestroyable = isdestroyable
         self.image = pygame.image.load(path)
         self.rect = self.image.get_rect().move(16*y, 16*x)
+
+        if self.isdestroyable == True:
+            self.add(destroyable_textures)
+        else:
+            self.add(undestroyable_textures)
 
         self.add(textures_group, all_sprites)
 
@@ -85,13 +89,16 @@ class Missle(pygame.sprite.Sprite):
     
     def move(self):
         
-        texture_hits = pygame.sprite.spritecollide(self, textures_group, True)
+        texture_hits = pygame.sprite.spritecollide(self, destroyable_textures, True)
+        undestroyable_texture_hits = pygame.sprite.spritecollide(self, undestroyable_textures, False)
         tank_hits = pygame.sprite.spritecollide(self, tanks_group, True)
 
-        if len(tank_hits) > 1:
+        if undestroyable_texture_hits:
+            self.remove(missles_group, all_sprites)
+        elif len(tank_hits) > 1:
             tank_hits[1].hitpoints -= 1
             print(tank_hits[1].hitpoints)
-        if not(texture_hits) and self.ttl > 0:
+        elif not(texture_hits) and self.ttl > 0:
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
             self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
@@ -129,14 +136,16 @@ def check_collisions (missle):
 def draw_level():   #level's size is 75x50 textures
     global tank
 
-    f = open(path + "/levels/new_level.txt", "r")
+    f = open(path + "/levels/test_level.txt", "r")
     level = list([str(i).replace("\n", '') for i in f.readlines()])
     for i in range(0, len(level)):
         for j in range(0, len(level[0])):
             if level[i][j] == '%':
-                Texture(path + "/sprites/grass.png", i, j, ispassable=True, iskillable=False)
+                Texture(path + "/sprites/grass.png", i, j, ispassable=True, isdestroyable=False)
             elif level[i][j] == '*':
-                Texture(path + "/sprites/bricks.png", i, j, ispassable=False, iskillable=True)
+                Texture(path + "/sprites/bricks.png", i, j, ispassable=False, isdestroyable=True)
+            elif level[i][j] == "#":
+                Texture(path + "/sprites/steel_wall.png", i, j, ispassable=False, isdestroyable=False)
             elif level[i][j] == 'A':
                 tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
             elif level[i][j] == 'B':
@@ -187,6 +196,8 @@ if __name__ == "__main__":
 
     tanks_group = pygame.sprite.Group()
     textures_group = pygame.sprite.Group()
+    destroyable_textures = pygame.sprite.Group()
+    undestroyable_textures = pygame.sprite.Group()
     missles_group = pygame.sprite.Group()
     all_sprites = pygame.sprite.Group()
 

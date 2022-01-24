@@ -20,5 +20,7 @@ for i in range(0, 50):
             f.write("*")
         elif r == 0 and g == 255 and b == 0:
             f.write("%")
+        elif r == 255 and g == 255 and b == 255:
+            f.write("#") 
 
     if i != 49: f.write("\n")
