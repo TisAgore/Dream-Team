@@ -3,18 +3,18 @@ How to use:
 1. Install Python
 2. Install virtulenv Python package 
 
-'> pip install virtualenv'
+> pip install virtualenv
 
 3. Create a Python virtual environment 
 
-'> virtualenv venv'
+> virtualenv venv
 
 4. Activate Python virtual environment (Windows) 
 
-'> venv\Scripts\activate'
+> venv\Scripts\activate
 
 5. Run main.py file in CMD
 
-'> main.py'
+> main.py
 
 6. Enjoy
