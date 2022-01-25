@@ -14,13 +14,13 @@ c = 0
 for i in range(0, 50):
     for j in range(0, 75):
         r, g, b = rgb_img.getpixel((j, i))
-        if r == 0 and g == 0 and b == 0:
+        if r == 0 and g == 0 and b == 0:    #RGB(0, 0, 0) equals void
             f.write("-")
-        elif r == 255 and g == 0 and b == 0:
+        elif r == 255 and g == 0 and b == 0:    #RGB(255, 0, 0) equals brick wall
             f.write("*")
-        elif r == 0 and g == 255 and b == 0:
+        elif r == 0 and g == 255 and b == 0:    #RGB(0, 255, 0) equals grass
             f.write("%")
-        elif r == 255 and g == 255 and b == 255:
+        elif r == 255 and g == 255 and b == 255: #RGB(255, 255, 255) equals steel wall
             f.write("#") 
 
     if i != 49: f.write("\n")

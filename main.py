@@ -76,8 +76,8 @@ class Missle(pygame.sprite.Sprite):
         super().__init__(missles_group, all_sprites)
         self.image = Missle.sprites.get(type)
         self.path = path
-        self.x = x + 0.4 + self.type[0]*5
-        self.y = y + 0.4 + self.type[1]*5
+        self.x = x + 0.4 + self.type[0]*3
+        self.y = y + 0.4 + self.type[1]*3
         self.ttl = ttl
         self.owner = owner
         self.image = pygame.image.load(path + Missle.sprites.get(type))
@@ -91,13 +91,14 @@ class Missle(pygame.sprite.Sprite):
         
         texture_hits = pygame.sprite.spritecollide(self, destroyable_textures, True)
         undestroyable_texture_hits = pygame.sprite.spritecollide(self, undestroyable_textures, False)
-        tank_hits = pygame.sprite.spritecollide(self, tanks_group, True)
+        tank_hits = pygame.sprite.spritecollide(self, tanks_group, False)
 
         if undestroyable_texture_hits:
             self.remove(missles_group, all_sprites)
-        elif len(tank_hits) > 1:
-            tank_hits[1].hitpoints -= 1
-            print(tank_hits[1].hitpoints)
+        elif len(tank_hits) > 0:
+            for tank in tank_hits:
+                tank.hitpoints -= 1
+            self.remove(missles_group, all_sprites)
         elif not(texture_hits) and self.ttl > 0:
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
@@ -124,15 +125,6 @@ def check_borders(x, y):
         return False
     return True
 
-def check_collisions (missle):
-    global tanks_group
-    for tank in tanks_group:
-        if tank.x == missle.x and tank.y == missle.y:
-            tank.hitpoints -= 1
-            print(tank.hitpoints)
-            return False
-    return True
-
 def draw_level():   #level's size is 75x50 textures
     global tank
 
@@ -155,8 +147,9 @@ def draw_level():   #level's size is 75x50 textures
             elif level[i][j] == 'D':
                 Tank(path=(path + "/sprites/"), x=i, y=j, type="green", hitpoints=3)
 
-def main():
+def main(clock):
     while True:
+        clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -178,13 +171,16 @@ def main():
         
         for missle in missles_group:
             missle.move()
+        
+        for tank in tanks_group:
+            if tank.hitpoints <= 0:
+                tank.remove(tanks_group, all_sprites)
 
         screen.fill(THECOLORS['black'])
         tanks_group.draw(screen)
         missles_group.draw(screen)
         textures_group.draw(screen)
         pygame.display.flip()
-        time.sleep(0.01)
 
 if __name__ == "__main__":
 
@@ -203,6 +199,8 @@ if __name__ == "__main__":
 
     tank = 0
 
+    clock = pygame.time.Clock()
+
     draw_level()
 
-    main()
+    main(clock)
