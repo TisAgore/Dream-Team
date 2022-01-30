@@ -1,9 +1,7 @@
 import socket
-import threading
 from cgitb import text
 import sys
 import pygame
-import time
 import os
 from pygame.color import THECOLORS
 import math
@@ -21,6 +19,8 @@ class Texture(pygame.sprite.Sprite):
 
         if self.isdestroyable == True:
             self.add(destroyable_textures)
+        elif self.ispassable == True:
+            self.add(walk_through_textures)
         else:
             self.add(undestroyable_textures)
 
@@ -87,27 +87,26 @@ class Missle(pygame.sprite.Sprite):
 
         self.add(missles_group, all_sprites)
 
-        
-    
     def move(self):
         
         texture_hits = pygame.sprite.spritecollide(self, destroyable_textures, True)
         undestroyable_texture_hits = pygame.sprite.spritecollide(self, undestroyable_textures, False)
         tank_hits = pygame.sprite.spritecollide(self, tanks_group, False)
 
-        if undestroyable_texture_hits:
+        if undestroyable_texture_hits:  #check collisions with undestroyable textures
             self.remove(missles_group, all_sprites)
-        elif len(tank_hits) > 0:
+        elif len(tank_hits) > 0:    #check collisions with tanks
             for tank in tank_hits:
                 tank.hitpoints -= 1
             self.remove(missles_group, all_sprites)
-        elif not(texture_hits) and self.ttl > 0:
+        elif self.y*16+8 > width or self.x < 0 or self.x*16+8 > height or self.y < 0: #check collisions with screen borders
+            self.remove(missles_group, all_sprites)
+        elif not(texture_hits) and self.ttl > 0:    #move missle
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
             self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
             self.remove(missles_group, all_sprites)
-            self.add(missles_group, all_sprites)
-        
+            self.add(missles_group, all_sprites)        
         else:
             self.remove(missles_group, all_sprites)
 
@@ -128,7 +127,7 @@ def check_borders(x, y):
     return True
 
 def draw_level():   #level's size is 75x50 textures
-    global tank
+    global tank, enemy
 
     f = open(path + "/levels/test_level.txt", "r")
     level = list([str(i).replace("\n", '') for i in f.readlines()])
@@ -140,18 +139,16 @@ def draw_level():   #level's size is 75x50 textures
                 Texture(path + "/sprites/bricks.png", i, j, ispassable=False, isdestroyable=True)
             elif level[i][j] == "#":
                 Texture(path + "/sprites/steel_wall.png", i, j, ispassable=False, isdestroyable=False)
-            elif level[i][j] == 'A':
+            elif level[i][j] == 'P':
                 tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
-            elif level[i][j] == 'B':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="grey", hitpoints=3)
-            elif level[i][j] == 'C':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
-            elif level[i][j] == 'D':
-                Tank(path=(path + "/sprites/"), x=i, y=j, type="green", hitpoints=3)
+            elif level[i][j] == 'E':
+                enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
+
 
 def main(clock, sock):
     while True:
         clock.tick(60)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -163,36 +160,37 @@ def main(clock, sock):
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            data = [tank.x, tank.y]
-            data[0] += -1/8
-            data = str(data[0]) + ' ' + str(data[1])
+            data = str(-1/8) + ' ' + str(0) + ' ' + str(0)
             sock.send(bytes(data, encoding="UTF-8"))
             tank.move(x=-1/8, y=0, image=0)
         if keys[pygame.K_DOWN]:
-            data = [tank.x, tank.y]
-            data[0] += -1/8
-            data = str(data[0]) + ' ' + str(data[1])
+            data = str(1/8) + ' ' + str(0) + ' ' + str(1)
             sock.send(bytes(data, encoding="UTF-8"))
             tank.move(x=1/8, y=0, image=1)
         if keys[pygame.K_LEFT]:
-            data = [tank.x, tank.y]
-            data[0] += -1/8
-            data = str(data[0]) + ' ' + str(data[1])
+            data = str(0) + ' ' + str(-1/8) + ' ' + str(3)
             sock.send(bytes(data, encoding="UTF-8"))
             tank.move(x=0, y=-1/8, image=3)
         if keys[pygame.K_RIGHT]:
-            data = [tank.x, tank.y]
-            data[0] += -1/8
-            data = str(data[0]) + ' ' + str(data[1])
+            data = str(0) + ' ' + str(1/8) + ' ' + str(2)
             sock.send(bytes(data, encoding="UTF-8"))
             tank.move(x=0, y=1/8, image=2)
-        
+
         for missle in missles_group:
             missle.move()
         
-        for tank in tanks_group:
-            if tank.hitpoints <= 0:
-                tank.remove(tanks_group, all_sprites)
+        for tanket in tanks_group:
+            if tanket.hitpoints <= 0:
+                tanket.remove(tanks_group, all_sprites)
+
+        data = sock.recv(100)
+
+        data = data.decode("UTF-8")
+
+        if data:
+            x, y, image = map(float, data.split())
+
+            enemy.move(x=x, y=y, image=int(image))
 
         screen.fill(THECOLORS['black'])
         tanks_group.draw(screen)
@@ -208,9 +206,12 @@ if __name__ == "__main__":
 
     screen = pygame.display.set_mode((1200, 800))
 
+    width, height = screen.get_size()
+
     tanks_group = pygame.sprite.Group()
     textures_group = pygame.sprite.Group()
     destroyable_textures = pygame.sprite.Group()
+    walk_through_textures = pygame.sprite.Group()
     undestroyable_textures = pygame.sprite.Group()
     missles_group = pygame.sprite.Group()
     all_sprites = pygame.sprite.Group()
