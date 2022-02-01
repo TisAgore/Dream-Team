@@ -5,12 +5,17 @@ sock = socket.socket()
 
 sock.bind(('localhost', 8088))
 
-sock.listen()
+sock.listen(2)
 
 conns = list()
 
 def send(conn):
     global conns
+
+    if len(conns) == 1:
+        conn.send(bytes("0", encoding="UTF-8"))
+    elif len(conns) == 2:
+        conn.send(bytes("1", encoding="UTF-8"))
     while True:
         data = conn.recv(100)
         for connection in conns:

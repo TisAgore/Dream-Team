@@ -164,11 +164,11 @@ def main(clock):
 
         if keys[pygame.K_UP]:
             tank.move(x=-1/8, y=0, image=0)
-        if keys[pygame.K_DOWN]:
+        elif keys[pygame.K_DOWN]:
             tank.move(x=1/8, y=0, image=1)
-        if keys[pygame.K_LEFT]:
+        elif keys[pygame.K_LEFT]:
             tank.move(x=0, y=-1/8, image=3)
-        if keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_RIGHT]:
             tank.move(x=0, y=1/8, image=2)
         
         for missle in missles_group:

@@ -5,6 +5,7 @@ import pygame
 import os
 from pygame.color import THECOLORS
 import math
+import threading
 
 
 class Texture(pygame.sprite.Sprite):
@@ -140,14 +141,72 @@ def draw_level():   #level's size is 75x50 textures
             elif level[i][j] == "#":
                 Texture(path + "/sprites/steel_wall.png", i, j, ispassable=False, isdestroyable=False)
             elif level[i][j] == 'P':
-                tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
+                if flag:
+                    tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
+                else:
+                    tank = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
             elif level[i][j] == 'E':
-                enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
+                if flag:
+                    enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="gold", hitpoints=3)
+                else:
+                    enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
+
+def get_data(sock):
+    global enemy
+    while True:
+
+        data = sock.recv(100)
+
+        data = data.decode("UTF-8")
+
+        if data.count(' ') == 2:
+            x, y, image = map(float, data.split())
+
+            enemy.move(x=x, y=y, image=int(image))
+
+        elif data.count(' ') == 3:
+
+            x, y, ttl, direction = data.split()
+
+            x = float(x)
+            y = float(y)
+            ttl = int(ttl)
+
+            Missle(path=(path + "/sprites/"), x=x, y=y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
+        
+        elif data.count(' ') == 6:
+            
+            missle_x, missle_y, ttl, direction, tank_x, tank_y, image = data.split()
+
+            missle_x = float(missle_x)
+            missle_y = float(missle_y)
+            ttl = int(ttl)
+            tank_x = float(tank_x)
+            tank_y = float(tank_y)
+            image = int(image)
+
+            Missle(path=(path + "/sprites/"), x=missle_x, y=missle_y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
+            enemy.move(x=tank_x, y=tank_y, image=image)
+
 
 
 def main(clock, sock):
+    global flag, tank, enemy
+    flag = sock.recv(10).decode("utf-8")
+    flag = int(flag)
+    
+    draw_level()
+
+    if flag:
+        tank, enemy = enemy, tank
+
+    t = threading.Thread(target=get_data, args=(sock,), daemon=True)
+    t.start()
+
     while True:
         clock.tick(60)
+
+        data = ''
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -155,25 +214,35 @@ def main(clock, sock):
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    Missle(path=(path+"/sprites/"), x=tank.x, y=tank.y, ttl=240, type=tank.direction, speed=1/4, owner=tank)
+                    spawn = True
+                    for missle in missles_group:
+                        if missle.owner == tank:
+                            spawn = False
+                    if spawn:
+                        Missle(path=(path+"/sprites/"), x=tank.x, y=tank.y, ttl=240, type=tank.direction, speed=1/4, owner=tank)
+                        data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(240) + ' ' + str(tank.direction)
 
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            data = str(-1/8) + ' ' + str(0) + ' ' + str(0)
-            sock.send(bytes(data, encoding="UTF-8"))
+            if len(data) > 0:
+                data += ' '
+            data += str(-1/8) + ' ' + str(0) + ' ' + str(0)
             tank.move(x=-1/8, y=0, image=0)
-        if keys[pygame.K_DOWN]:
-            data = str(1/8) + ' ' + str(0) + ' ' + str(1)
-            sock.send(bytes(data, encoding="UTF-8"))
+        elif keys[pygame.K_DOWN]:
+            if len(data) > 0:
+                data += ' '
+            data += str(1/8) + ' ' + str(0) + ' ' + str(1)
             tank.move(x=1/8, y=0, image=1)
-        if keys[pygame.K_LEFT]:
-            data = str(0) + ' ' + str(-1/8) + ' ' + str(3)
-            sock.send(bytes(data, encoding="UTF-8"))
+        elif keys[pygame.K_LEFT]:
+            if len(data) > 0:
+                data += ' '
+            data += str(0) + ' ' + str(-1/8) + ' ' + str(3)
             tank.move(x=0, y=-1/8, image=3)
-        if keys[pygame.K_RIGHT]:
-            data = str(0) + ' ' + str(1/8) + ' ' + str(2)
-            sock.send(bytes(data, encoding="UTF-8"))
+        elif keys[pygame.K_RIGHT]:
+            if len(data) > 0:
+                data += ' '
+            data += str(0) + ' ' + str(1/8) + ' ' + str(2)
             tank.move(x=0, y=1/8, image=2)
 
         for missle in missles_group:
@@ -182,15 +251,8 @@ def main(clock, sock):
         for tanket in tanks_group:
             if tanket.hitpoints <= 0:
                 tanket.remove(tanks_group, all_sprites)
-
-        data = sock.recv(100)
-
-        data = data.decode("UTF-8")
-
-        if data:
-            x, y, image = map(float, data.split())
-
-            enemy.move(x=x, y=y, image=int(image))
+        
+        sock.send(bytes(data, encoding="UTF-8"))    #send data to server
 
         screen.fill(THECOLORS['black'])
         tanks_group.draw(screen)
@@ -217,10 +279,10 @@ if __name__ == "__main__":
     all_sprites = pygame.sprite.Group()
 
     tank = 0
+    enemy = 0
+    flag = 0
 
     clock = pygame.time.Clock()
-
-    draw_level()
     
     sock = socket.socket()
 
