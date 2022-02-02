@@ -27,10 +27,12 @@ def main():
                 f.write("%")
             elif r == 255 and g == 255 and b == 255: #RGB(255, 255, 255) equals steel wall
                 f.write("#")
-            elif r == 50 and g == 50 and b == 50:
+            elif r == 50 and g == 50 and b == 50:   #RGB(50, 50, 50) equals 1st player
                 f.write("P")
-            elif r == 150 and g == 150 and b == 150:
+            elif r == 150 and g == 150 and b == 150:    #RGB(150, 150, 150) equals 2nd player 
                 f.write("E")
+            else:
+                f.write("-")
 
         if i != 49: f.write("\n")
 

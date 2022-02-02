@@ -62,6 +62,13 @@ class Tank(pygame.sprite.Sprite):
         self.remove(tanks_group, all_sprites)
         self.add(tanks_group, all_sprites)
 
+    def place(self, x, y, image):
+        self.direction = list(Missle.sprites.keys())[image]
+        self.image = pygame.image.load(self.path + self.images[image])
+        self.rect = self.image.get_rect().move(16*y, 16*x)
+        self.remove(tanks_group, all_sprites)
+        self.add(tanks_group, all_sprites)
+
 class Missle(pygame.sprite.Sprite):
 
     sprites = {"up": "missle_up.png", "down": "missle_down.png", "right": "missle_right.png", "left": "missle_left.png", "blaze": "blaze.png"}
@@ -162,7 +169,7 @@ def get_data(sock):
         if data.count(' ') == 2:
             x, y, image = map(float, data.split())
 
-            enemy.move(x=x, y=y, image=int(image))
+            enemy.place(x=x, y=y, image=int(image))
 
         elif data.count(' ') == 3:
 
@@ -186,7 +193,7 @@ def get_data(sock):
             image = int(image)
 
             Missle(path=(path + "/sprites/"), x=missle_x, y=missle_y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
-            enemy.move(x=tank_x, y=tank_y, image=image)
+            enemy.place(x=tank_x, y=tank_y, image=image)
 
 
 
@@ -227,22 +234,22 @@ def main(clock, sock):
         if keys[pygame.K_UP]:
             if len(data) > 0:
                 data += ' '
-            data += str(-1/8) + ' ' + str(0) + ' ' + str(0)
+            data += str(tank.x-1/8) + ' ' + str(tank.y) + ' ' + str(0)
             tank.move(x=-1/8, y=0, image=0)
         elif keys[pygame.K_DOWN]:
             if len(data) > 0:
                 data += ' '
-            data += str(1/8) + ' ' + str(0) + ' ' + str(1)
+            data += str(tank.x+1/8) + ' ' + str(tank.y) + ' ' + str(1)
             tank.move(x=1/8, y=0, image=1)
         elif keys[pygame.K_LEFT]:
             if len(data) > 0:
                 data += ' '
-            data += str(0) + ' ' + str(-1/8) + ' ' + str(3)
+            data += str(tank.x) + ' ' + str(tank.y-1/8) + ' ' + str(3)
             tank.move(x=0, y=-1/8, image=3)
         elif keys[pygame.K_RIGHT]:
             if len(data) > 0:
                 data += ' '
-            data += str(0) + ' ' + str(1/8) + ' ' + str(2)
+            data += str(tank.x) + ' ' + str(tank.y+1/8) + ' ' + str(2)
             tank.move(x=0, y=1/8, image=2)
 
         for missle in missles_group:
@@ -254,10 +261,15 @@ def main(clock, sock):
         
         sock.send(bytes(data, encoding="UTF-8"))    #send data to server
 
+        text_hp = hp.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
+        
         screen.fill(THECOLORS['black'])
         tanks_group.draw(screen)
         missles_group.draw(screen)
         textures_group.draw(screen)
+
+        screen.blit(text_hp, (1, 1)) #draw HP
+
         pygame.display.flip()
 
 if __name__ == "__main__":
@@ -277,6 +289,8 @@ if __name__ == "__main__":
     undestroyable_textures = pygame.sprite.Group()
     missles_group = pygame.sprite.Group()
     all_sprites = pygame.sprite.Group()
+
+    hp = pygame.font.Font(None, 36)
 
     tank = 0
     enemy = 0
