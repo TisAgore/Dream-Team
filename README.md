@@ -10,7 +10,10 @@ How to use:
 4. Activate Python virtual environment (Windows) 
 
 > venv\Scripts\activate
-5. Run main.py file in CMD
+5. Install required Python packages
+
+> pip install -r requirements.txt
+7. Run main.py file in CMD
 
 > main.py
-6. Enjoy
+7. Enjoy
