@@ -13,7 +13,7 @@ How to use:
 5. Install required Python packages
 
 > pip install -r requirements.txt
-7. Run main.py file in CMD
+6. Run main.py file in CMD
 
 > main.py
 7. Enjoy
