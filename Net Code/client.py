@@ -158,11 +158,11 @@ def draw_level():   #level's size is 75x50 textures
                 else:
                     enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
 
-def get_data(sock):
+def get_data(sock): #Thread to get 2nd Palyer's data
     global enemy
     while True:
 
-        data = sock.recv(100)
+        data = sock.recv(50)
 
         data = data.decode("UTF-8")
 
@@ -197,11 +197,22 @@ def get_data(sock):
 
 
 
-def main(clock, sock):
+def main(clock, sock):  #Main function
     global flag, tank, enemy
-    flag = sock.recv(10).decode("utf-8")
-    flag = int(flag)
     
+    loading_message = message.render(str("LOADING..."), 1, (180,0,0))
+    screen.blit(loading_message, (500, 300))
+    pygame.display.flip()
+
+    data = sock.recv(10).decode("utf-8")
+
+    while not data == "Connected":
+        
+        data = sock.recv(10).decode("utf-8")
+
+    flag = sock.recv(1).decode("utf-8")
+    flag = int(flag)
+
     draw_level()
 
     if flag:
@@ -210,7 +221,7 @@ def main(clock, sock):
     t = threading.Thread(target=get_data, args=(sock,), daemon=True)
     t.start()
 
-    while True:
+    while True: #Game cycle
         clock.tick(60)
 
         data = ''
@@ -232,25 +243,25 @@ def main(clock, sock):
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_UP]:
-            if len(data) > 0:
-                data += ' '
-            data += str(tank.x-1/8) + ' ' + str(tank.y) + ' ' + str(0)
             tank.move(x=-1/8, y=0, image=0)
+            if len(data) > 0:
+                data += ' '
+            data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(0)
         elif keys[pygame.K_DOWN]:
-            if len(data) > 0:
-                data += ' '
-            data += str(tank.x+1/8) + ' ' + str(tank.y) + ' ' + str(1)
             tank.move(x=1/8, y=0, image=1)
+            if len(data) > 0:
+                data += ' '
+            data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(1)
         elif keys[pygame.K_LEFT]:
-            if len(data) > 0:
-                data += ' '
-            data += str(tank.x) + ' ' + str(tank.y-1/8) + ' ' + str(3)
             tank.move(x=0, y=-1/8, image=3)
-        elif keys[pygame.K_RIGHT]:
             if len(data) > 0:
                 data += ' '
-            data += str(tank.x) + ' ' + str(tank.y+1/8) + ' ' + str(2)
+            data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(3)
+        elif keys[pygame.K_RIGHT]:
             tank.move(x=0, y=1/8, image=2)
+            if len(data) > 0:
+                data += ' '
+            data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(2)
 
         for missle in missles_group:
             missle.move()
@@ -261,7 +272,7 @@ def main(clock, sock):
         
         sock.send(bytes(data, encoding="UTF-8"))    #send data to server
 
-        text_hp = hp.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
+        text_hp = message.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
         
         screen.fill(THECOLORS['black'])
         tanks_group.draw(screen)
@@ -290,7 +301,7 @@ if __name__ == "__main__":
     missles_group = pygame.sprite.Group()
     all_sprites = pygame.sprite.Group()
 
-    hp = pygame.font.Font(None, 36)
+    message = pygame.font.Font(None, 36)
 
     tank = 0
     enemy = 0

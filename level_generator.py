@@ -10,11 +10,8 @@ def main():
 
     img = Image.open(path + "/levels/" + image_name, "r")
     rgb_img = img.convert("RGB")
-    pixels = list(img.getdata())
 
     f = open(path + "/levels/" + level_path + ".txt", "w")
-
-    c = 0
 
     for i in range(0, 50):
         for j in range(0, 75):
@@ -38,6 +35,6 @@ def main():
 
 if __name__ == "__main__":
     if "--help" in argv or len(argv) != 3:
-        print("Tool for generating levels\n\nUsage: \n>level_generator.py {level_image_name} {level_file_name}\n\nExample: \n>level_generator.py level.png level")
+        print("Tool for generating levels\n\nUsage: \n>level_generator.py {level_image_name - Must be stored in /levels/ folder} {level_file_name}\n\nExample: \n>level_generator.py level.png level")
     else:
         main()

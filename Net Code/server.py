@@ -13,9 +13,14 @@ def send(conn):
     global conns
 
     if len(conns) == 1:
+        while len(conns) != 2:
+            pass
+        conn.send(bytes("Connected", encoding="UTF-8"))
         conn.send(bytes("0", encoding="UTF-8"))
     elif len(conns) == 2:
+        conn.send(bytes("Connected", encoding="UTF-8"))
         conn.send(bytes("1", encoding="UTF-8"))
+        
     while True:
         data = conn.recv(100)
         for connection in conns:
