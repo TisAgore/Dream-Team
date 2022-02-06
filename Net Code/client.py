@@ -204,9 +204,9 @@ def main(clock, sock):  #Main function
     screen.blit(loading_message, (500, 300))
     pygame.display.flip()
 
-    data = sock.recv(10).decode("utf-8")
+    data = ''
 
-    while not data == "Connected":
+    while data != "Connected":
         
         data = sock.recv(10).decode("utf-8")
 
