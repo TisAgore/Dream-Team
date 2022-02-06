@@ -270,7 +270,7 @@ def main(clock, sock):  #Main function
             if tanket.hitpoints <= 0:
                 tanket.remove(tanks_group, all_sprites)
         
-        data = data + '*'*(50-len(data))
+        data = data + '*'*(50-len(data))    #Make similar size of sended data
         sock.send(bytes(data, encoding="UTF-8"))    #send data to server
 
         text_hp = message.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
