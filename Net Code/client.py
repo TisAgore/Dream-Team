@@ -165,7 +165,7 @@ def get_data(sock): #Thread to get 2nd Palyer's data
 
         data = data.decode("UTF-8")
         data = data[0:data.index("*")]
-        
+
         if data.count(' ') == 2:
             x, y, image = map(float, data.split())
 
@@ -208,7 +208,7 @@ def main(clock, sock):  #Main function
 
     while data != "Connected":
         
-        data = sock.recv(10).decode("utf-8")
+        data = sock.recv(9).decode("utf-8")
 
     flag = sock.recv(1).decode("utf-8")
     flag = int(flag)
