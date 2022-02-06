@@ -7,7 +7,6 @@ from pygame.color import THECOLORS
 import math
 import threading
 
-
 class Texture(pygame.sprite.Sprite):
     def __init__(self, path, x, y, ispassable, isdestroyable):
         super().__init__(textures_group, all_sprites)
@@ -165,7 +164,8 @@ def get_data(sock): #Thread to get 2nd Palyer's data
         data = sock.recv(50)
 
         data = data.decode("UTF-8")
-
+        data = data[0:data.index("*")]
+        
         if data.count(' ') == 2:
             x, y, image = map(float, data.split())
 
@@ -194,7 +194,7 @@ def get_data(sock): #Thread to get 2nd Palyer's data
 
             Missle(path=(path + "/sprites/"), x=missle_x, y=missle_y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
             enemy.place(x=tank_x, y=tank_y, image=image)
-
+        
 
 
 def main(clock, sock):  #Main function
@@ -270,6 +270,7 @@ def main(clock, sock):  #Main function
             if tanket.hitpoints <= 0:
                 tanket.remove(tanks_group, all_sprites)
         
+        data = data + '*'*(50-len(data))
         sock.send(bytes(data, encoding="UTF-8"))    #send data to server
 
         text_hp = message.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
