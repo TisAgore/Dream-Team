@@ -271,7 +271,7 @@ def main(clock, sock):  #Main function
                 data += ' '
             data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(2)
 
-        while not thread_flag:
+        while not thread_flag:  #Cycle need's to syncronise socket thread and main function.
             pass
 
         for missle in missles_group:
