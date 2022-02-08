@@ -5,6 +5,8 @@ import time
 import os
 from pygame.color import THECOLORS
 import math
+import pygame_menu
+import re
 
 
 class Texture(pygame.sprite.Sprite):
@@ -126,6 +128,12 @@ def check_borders(x, y):
         return False
     return True
 
+def start_the_game():
+    
+    draw_level()
+
+    main()
+
 def draw_level():   #level's size is 75x50 textures
     global tank
 
@@ -144,7 +152,8 @@ def draw_level():   #level's size is 75x50 textures
             elif level[i][j] == 'E':
                 Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
 
-def main(clock):
+def main():
+    global clock
     while True:
         clock.tick(60)
         for event in pygame.event.get():
@@ -206,6 +215,9 @@ if __name__ == "__main__":
 
     clock = pygame.time.Clock()
 
-    draw_level()
+    menu = pygame_menu.Menu('Play', 400, 300,
+                       theme=pygame_menu.themes.THEME_BLUE)
+    menu.add.button('Play', start_the_game)
+    menu.add.button('Quit', pygame_menu.events.EXIT)
 
-    main(clock)
+    menu.mainloop(screen)

@@ -1,3 +1,4 @@
+from distutils.log import error
 import socket
 import threading
 
@@ -22,10 +23,11 @@ def send(conn):
         conn.send(bytes("1", encoding="UTF-8"))
         
     while True:
-        data = conn.recv(100)
+        data = conn.recv(50)
         for connection in conns:
             if not(connection == conn):
                 connection.send(data)
+
 
 
 while True:

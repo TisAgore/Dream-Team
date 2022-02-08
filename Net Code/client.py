@@ -8,6 +8,8 @@ from pygame.color import THECOLORS
 import math
 import threading
 import time
+import pygame_menu
+import re
 
 class Texture(pygame.sprite.Sprite):
     def __init__(self, path, x, y, ispassable, isdestroyable):
@@ -139,6 +141,36 @@ def check_borders(x, y):
         return False
     return True
 
+def get_server_ip(addres):
+    global ip
+    if re.match(r'^([0-9]{1,3}[.]){3}[0-9]{1,3}', addres):
+        ip = addres
+
+def start_the_game():
+    global sock, screen, clock
+    if re.match(r'^([0-9]{1,3}[.]){3}[0-9]{1,3}', ip):
+        sock.connect((ip, 8088))
+        if main():
+            end_message = message.render(str("VICTORY"), 1, (180,0,0))
+            while True:
+                screen.blit(end_message, (550, 300))
+                pygame.display.flip()
+                clock.tick(60)
+                check_events()
+        else:
+            end_message = message.render(str("DEFEAT"), 1, (180,0,0))
+            while True:
+                screen.blit(end_message, (550, 300))
+                pygame.display.flip()
+                clock.tick(60)
+                check_events()
+
+def check_events():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
 def draw_level():   #level's size is 75x50 textures
     global tank, enemy
 
@@ -205,8 +237,8 @@ def get_data(sock): #Thread to get 2nd Palyer's data
         
 
 
-def main(clock, sock):  #Main function
-    global flag, tank, enemy, thread_flag
+def main():  #Main function
+    global flag, tank, enemy, thread_flag, clock, sock
     
     loading_message = message.render(str("LOADING..."), 1, (180,0,0))
     screen.blit(loading_message, (500, 300))
@@ -277,9 +309,10 @@ def main(clock, sock):  #Main function
         for missle in missles_group:
             missle.move()
         
-        for tanket in tanks_group:
-            if tanket.hitpoints <= 0:
-                tanket.remove(tanks_group, all_sprites)
+        if tank.hitpoints == 0:
+            return False
+        elif enemy.hitpoints == 0:
+            return True
         
         data = data + '*'*(50-len(data))    #Make similar size of sended data
         sock.send(bytes(data, encoding="UTF-8"))    #send data to server
@@ -319,11 +352,17 @@ if __name__ == "__main__":
     enemy = 0
     flag = 0
     thread_flag = 1
+    ip = '127.0.0.1'
 
     clock = pygame.time.Clock()
     
     sock = socket.socket()
 
-    sock.connect(('localhost', 8088))
+    menu = pygame_menu.Menu('Play', 400, 300,
+                       theme=pygame_menu.themes.THEME_BLUE)
 
-    main(clock, sock)
+    menu.add.text_input('Server IP :', default='127.0.0.1', onchange=get_server_ip)
+    menu.add.button('Play', start_the_game)
+    menu.add.button('Quit', pygame_menu.events.EXIT)
+
+    menu.mainloop(screen)
